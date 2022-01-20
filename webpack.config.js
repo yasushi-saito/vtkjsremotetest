@@ -73,8 +73,7 @@ module.exports = (env, argv) => ({
     }),
   ],
   devServer: {
-    contentBase: path.join(__dirname, "dist"),
-    disableHostCheck: true,
+    static: path.join(__dirname, "dist"),
     historyApiFallback: true,
     headers: {
       'Access-Control-Allow-Origin': '*',
