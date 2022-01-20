@@ -1,3 +1,4 @@
+#!/usr/local/opt/paraview_egl/bin/pvbatch
 r"""
     This module is a ParaViewWeb server application.
     The following command line illustrates how to use it::
@@ -35,6 +36,10 @@ from wslink import register as exportRpc
 
 from paraview import simple
 from wslink import server
+
+import vtkmodules.web.render_window_serializer as render_window_serializer
+
+render_window_serializer.initializeSerializers()
 
 # =============================================================================
 # Create custom Pipeline Manager class to handle clients requests
