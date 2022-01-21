@@ -39,7 +39,7 @@ export interface ViewState {
   type?: string;
   properties?: {[key: string]: any};
   dependencies?: ViewState[];
-
+  extra?: any;
   // ViewState may contain other arbitrary key / value pairs.
   [key: string]: any;
 }

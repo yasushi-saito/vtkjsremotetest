@@ -46,23 +46,7 @@ module.exports = (env, argv) => ({
               },
             },
           ],
-        }, {
-          test: /\.glsl$/i,
-          include: /node_modules(\/|\\)vtk.js(\/|\\)/,
-          loader: 'shader-loader',
-        }, {
-          test: /\.css$/,
-          use: [
-            { loader: 'style-loader' },
-            { loader: 'css-loader' },
-            {
-              loader: 'postcss-loader',
-              options: {
-                plugins: () => [autoprefixer('last 2 version', 'ie >= 10')],
-              },
-            },
-          ],
-        },
+        }
       ]
   },
   plugins: [

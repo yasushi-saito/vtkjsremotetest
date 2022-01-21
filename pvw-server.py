@@ -82,7 +82,11 @@ class _Server(pv_wslink.PVServerProtocol):
         renderingSettings.LODThreshold = _Server.settingsLODThreshold
 
         # Put something in the scene
-        simple.Cone()
+        self.cone = simple.Cone()
+        self.cone.Center = [30, 40, 33]
+        self.cone.Height = 50
+        self.cone.Radius = 60
+
         rep = simple.Show()
         rep.Representation = 'Surface With Edges';
         rep.LineWidth = 2
