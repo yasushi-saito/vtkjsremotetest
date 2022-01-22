@@ -25,6 +25,10 @@ import vtkGestureCameraManipulator from '@kitware/vtk.js/Interaction/Manipulator
 import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
 import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
 
+import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
+import vtkConeSource from '@kitware/vtk.js/Filters/Sources/ConeSource';
+import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
+
 //import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 //import vtkConeSource from '@kitware/vtk.js/Filters/Sources/ConeSource';
 //import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
@@ -172,6 +176,22 @@ export function newClient(elem: HTMLElement): Client {
   interactor.initialize();
   interactor.bindEvents(elem);
 
+  if (false) {
+    firsttime = false;
+    const renderer = vtkRenderer.newInstance();
+    const coneSource = vtkConeSource.newInstance();
+    const actor = vtkActor.newInstance();
+    const mapper = vtkMapper.newInstance();
+    mapper.setInputConnection(coneSource.getOutputPort());
+    actor.setMapper(mapper);
+    actor.getProperty().setRepresentation(1);
+    actor.getProperty().setColor(0, 0, 0);
+    actor.getProperty().setInterpolationToFlat();
+    renderer.resetCamera();
+    renderer.addActor(actor);
+    renderWindow.addRenderer(renderer);
+  }
+
   const config = { sessionURL: 'ws://localhost:1234/ws' };
   const sc = SmartConnect.newInstance({config});
 
@@ -197,6 +217,8 @@ export function newClient(elem: HTMLElement): Client {
   return client;
 }
 
+let firsttime = true;
+
 function onConnectionReady(client: Client, conn: any) {
   client.protocol = protocol(conn.getSession());
 
@@ -214,6 +236,11 @@ function onConnectionReady(client: Client, conn: any) {
     const progress = client.renderWindow.synchronize(viewState);
     console.log(`viewstate progress ${progress}`);
     if (progress) {
+      console.log(`RENDERWINDOW: ${client.renderWindow.getRenderersByReference()}`);
+      client.renderWindow.getRenderersByReference().forEach((r, i) => {
+        console.log(`RENDERWINDOW ${i}: ${JSON.stringify(r)}`);
+      });
+
       if (client.renderWindow.getRenderersByReference().length) {
         [client.renderer] = client.renderWindow.getRenderersByReference();
         client.activeCamera = client.renderer.getActiveCamera();

@@ -83,9 +83,9 @@ class _Server(pv_wslink.PVServerProtocol):
 
         # Put something in the scene
         self.cone = simple.Cone()
-        self.cone.Center = [30, 40, 33]
-        self.cone.Height = 50
-        self.cone.Radius = 60
+        self.cone.Center = [-1, -1, -1]
+        self.cone.Height = 1
+        self.cone.Radius = 2
 
         rep = simple.Show()
         rep.Representation = 'Surface With Edges';
