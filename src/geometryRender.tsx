@@ -9,7 +9,7 @@ import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWind
 import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
 import vtkInteractorStyleManipulator from '@kitware/vtk.js/Interaction/Style/InteractorStyleManipulator';
 
-import vtkSynchronizableRenderWindow, {SynchContext, vtkSynchronizableRenderWindowInstance, ViewState} from '@kitware/vtk.js/Rendering/Misc/SynchronizableRenderWindow';
+import vtkSynchronizableRenderWindow, {extraRenderer, SynchContext, vtkSynchronizableRenderWindowInstance, ViewState} from '@kitware/vtk.js/Rendering/Misc/SynchronizableRenderWindow';
 
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
 
@@ -78,6 +78,7 @@ interface Client {
   openGL: vtkOpenGLRenderWindow;
   protocol: Protocol | null;
   style: vtkInteractorStyleManipulator;
+  localRenderer: vtkRenderer;
 
   renderer: vtkRenderer | null;
   activeCamera: vtkCamera | null;
@@ -176,20 +177,23 @@ export function newClient(elem: HTMLElement): Client {
   interactor.initialize();
   interactor.bindEvents(elem);
 
-  if (false) {
-    firsttime = false;
-    const renderer = vtkRenderer.newInstance();
+  const localRenderer = vtkRenderer.newInstance();
+  if (true) {
     const coneSource = vtkConeSource.newInstance();
     const actor = vtkActor.newInstance();
     const mapper = vtkMapper.newInstance();
     mapper.setInputConnection(coneSource.getOutputPort());
     actor.setMapper(mapper);
-    actor.getProperty().setRepresentation(1);
-    actor.getProperty().setColor(0, 0, 0);
+    actor.getProperty().setRepresentation(2);
+    actor.getProperty().setColor(1, 1, 1);
     actor.getProperty().setInterpolationToFlat();
-    renderer.resetCamera();
-    renderer.addActor(actor);
-    renderWindow.addRenderer(renderer);
+    localRenderer.resetCamera();
+    localRenderer.addActor(actor);
+    localRenderer.setLayer(1);
+    localRenderer.setInteractive(false);
+    renderWindow.addRenderer(localRenderer);
+    //console.log(`EXTRA: ${extraRenderer}`);
+    //vtkSynchronizableRenderWindow.extraRenderer(renderer);
   }
 
   const config = { sessionURL: 'ws://localhost:1234/ws' };
@@ -201,6 +205,7 @@ export function newClient(elem: HTMLElement): Client {
     renderWindow,
     openGL,
     style,
+    localRenderer,
     protocol: null,
     renderer: null,
     activeCamera: null,
@@ -217,15 +222,9 @@ export function newClient(elem: HTMLElement): Client {
   return client;
 }
 
-let firsttime = true;
-
 function onConnectionReady(client: Client, conn: any) {
   client.protocol = protocol(conn.getSession());
 
-
-  // Bind user input
-  //client.renderWindow.getInteractor().onStartAnimation(viewStream.startInteraction);
-  //client.renderWindow.getInteractor().onEndAnimation(viewStream.endInteraction);
 
   // renderWindow.synchronize(state);
   // client.renderWindow.render();
@@ -238,12 +237,17 @@ function onConnectionReady(client: Client, conn: any) {
     if (progress) {
       console.log(`RENDERWINDOW: ${client.renderWindow.getRenderersByReference()}`);
       client.renderWindow.getRenderersByReference().forEach((r, i) => {
-        console.log(`RENDERWINDOW ${i}: ${JSON.stringify(r)}`);
+        console.log(`RENDERWINDOW ${i}: ${r.getLayer()}`);
       });
 
-      if (client.renderWindow.getRenderersByReference().length) {
-        [client.renderer] = client.renderWindow.getRenderersByReference();
+      if (!client.renderer && client.renderWindow.getRenderersByReference().length) {
+        const renderers = client.renderWindow.getRenderersByReference();
+        // Note: renderer[0] is the localRenderer itself.
+        // renderer[1] is the default remote renderer at layer 0.
+        client.renderer = renderers[1];
         client.activeCamera = client.renderer.getActiveCamera();
+        console.log(`SECATCIVE`);
+        client.localRenderer.setActiveCamera(client.activeCamera);
       }
       if (
         viewState.extra &&

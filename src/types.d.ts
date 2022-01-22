@@ -59,9 +59,12 @@ export interface vtkSynchronizableRenderWindowInstance extends vtkRenderWindow {
 export function newInstance(props: IInitialValues): vtkSynchronizableRenderWindowInstance;
 export function getSynchronizerContext(name?: string): SynchContext;
 
+  export function extraRenderer(r: any): void;
+
 export const vtkSynchronizableRenderWindow: {
   newInstance: typeof newInstance;
   getSynchronizerContext: typeof getSynchronizerContext;
+  extraRenderer: typeof extraRenderer;
 }
 
 export default vtkSynchronizableRenderWindow;
