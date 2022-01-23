@@ -1,15 +1,14 @@
-
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
 import '@kitware/vtk.js/Rendering/Profiles/Geometry';
 
-//import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
-//import vtkOrientationMarkerWidget from '@kitware/vtk.js/Interaction/Widgets/OrientationMarkerWidget';
+// import vtkFullScreenRenderWindow from '@kitware/vtk.js/Rendering/Misc/FullScreenRenderWindow';
+// import vtkOrientationMarkerWidget from '@kitware/vtk.js/Interaction/Widgets/OrientationMarkerWidget';
 import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
 import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
 import vtkInteractorStyleManipulator from '@kitware/vtk.js/Interaction/Style/InteractorStyleManipulator';
 
-import vtkSynchronizableRenderWindow, {extraRenderer, SynchContext, vtkSynchronizableRenderWindowInstance, ViewState} from '@kitware/vtk.js/Rendering/Misc/SynchronizableRenderWindow';
+import vtkSynchronizableRenderWindow, { extraRenderer, SynchContext, vtkSynchronizableRenderWindowInstance, ViewState } from '@kitware/vtk.js/Rendering/Misc/SynchronizableRenderWindow';
 
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
 
@@ -29,12 +28,12 @@ import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkConeSource from '@kitware/vtk.js/Filters/Sources/ConeSource';
 import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
 
-//import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
-//import vtkConeSource from '@kitware/vtk.js/Filters/Sources/ConeSource';
-//import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
+// import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
+// import vtkConeSource from '@kitware/vtk.js/Filters/Sources/ConeSource';
+// import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
 
 import SmartConnect from 'wslink/src/SmartConnect';
-import WebsocketConnection, {WebsocketSession} from 'wslink/src/WebsocketConnection';
+import WebsocketConnection, { WebsocketSession } from 'wslink/src/WebsocketConnection';
 
 type ViewId = string;
 
@@ -51,9 +50,9 @@ interface Protocol {
 function protocol(session: WebsocketSession) : Protocol {
   if (!session) throw Error('empty session');
   return {
-    connection: ()=>session,
+    connection: () => session,
     subscribe: async (callback: (viewState: ViewState[]) => Promise<any>): Promise<void> => {
-      session.subscribe("viewport.geometry.view.subscription", callback);
+      session.subscribe('viewport.geometry.view.subscription', callback);
     },
     registerView: async (viewId: string, callback: (viewState: ViewState[]) => Promise<any>): Promise<ViewId> => {
       await session.subscribe('viewport.geometry.view.subscription', callback);
@@ -61,13 +60,10 @@ function protocol(session: WebsocketSession) : Protocol {
       console.log(`registerView: got view ${JSON.stringify(viewId)}`);
       return reply.viewId;
     },
-    unregisterView: async(viewId: string): Promise<void> => {
+    unregisterView: async (viewId: string): Promise<void> => {
       await session.call('viewport.geometry.view.observer.remove', [viewId]);
-      return;
     },
-    getState: async(hash: string, binary: boolean): Promise<ArrayBuffer> => {
-      return await session.call('viewport.geometry.array.get', [hash, binary]);
-    }
+    getState: async (hash: string, binary: boolean): Promise<ArrayBuffer> => await session.call('viewport.geometry.array.get', [hash, binary]),
   };
 }
 
@@ -117,19 +113,19 @@ const INTERACTOR_SETTINGS: InteractorSetting[] = [
     button: 3,
     action: 'Zoom',
     scrollEnabled: true,
-  },  {
+  }, {
     button: 1,
     action: 'Pan',
     alt: true,
-  },  {
+  }, {
     button: 1,
     action: 'Zoom',
     control: true,
-  },        {
+  }, {
     button: 1,
     action: 'Select',
     alt: true,
-  },        {
+  }, {
     button: 1,
     action: 'Roll',
     alt: true,
@@ -164,7 +160,7 @@ function newManipulator(): vtkInteractorStyleManipulator {
 export function newClient(elem: HTMLElement): Client {
   const synchCtx = vtkSynchronizableRenderWindow.getSynchronizerContext();
   console.log(`SYNC: ${synchCtx}`);
-  const renderWindow = vtkSynchronizableRenderWindow.newInstance({synchronizerContext: synchCtx});
+  const renderWindow = vtkSynchronizableRenderWindow.newInstance({ synchronizerContext: synchCtx });
 
   const openGL = vtkOpenGLRenderWindow.newInstance();
   openGL.setContainer(elem);
@@ -192,12 +188,12 @@ export function newClient(elem: HTMLElement): Client {
     localRenderer.setLayer(1);
     localRenderer.setInteractive(false);
     renderWindow.addRenderer(localRenderer);
-    //console.log(`EXTRA: ${extraRenderer}`);
-    //vtkSynchronizableRenderWindow.extraRenderer(renderer);
+    // console.log(`EXTRA: ${extraRenderer}`);
+    // vtkSynchronizableRenderWindow.extraRenderer(renderer);
   }
 
   const config = { sessionURL: 'ws://localhost:1234/ws' };
-  const sc = SmartConnect.newInstance({config});
+  const sc = SmartConnect.newInstance({ config });
 
   const client: Client = {
     sc,
@@ -209,7 +205,7 @@ export function newClient(elem: HTMLElement): Client {
     protocol: null,
     renderer: null,
     activeCamera: null,
-  }
+  };
 
   sc.onConnectionReady((conn) => onConnectionReady(client, conn));
   sc.onConnectionError(console.error);
@@ -225,13 +221,12 @@ export function newClient(elem: HTMLElement): Client {
 function onConnectionReady(client: Client, conn: any) {
   client.protocol = protocol(conn.getSession());
 
-
   // renderWindow.synchronize(state);
   // client.renderWindow.render();
 
   const viewCallback = async (viewStates: ViewState[]): Promise<void> => {
     const viewState = viewStates[0];
-    console.log(`viewstate`, viewState, JSON.stringify(viewState));
+    console.log('viewstate', viewState, JSON.stringify(viewState));
     const progress = client.renderWindow.synchronize(viewState);
     console.log(`viewstate progress ${progress}`);
     if (progress) {
@@ -246,7 +241,7 @@ function onConnectionReady(client: Client, conn: any) {
         // renderer[1] is the default remote renderer at layer 0.
         client.renderer = renderers[1];
         client.activeCamera = client.renderer.getActiveCamera();
-        console.log(`SECATCIVE`);
+        console.log('SECATCIVE');
         client.localRenderer.setActiveCamera(client.activeCamera);
       }
       if (
@@ -256,7 +251,7 @@ function onConnectionReady(client: Client, conn: any) {
       ) {
         client.synchCtx.registerInstance(
           viewState.extra.camera,
-          client.activeCamera
+          client.activeCamera,
         );
       }
     }
@@ -266,7 +261,7 @@ function onConnectionReady(client: Client, conn: any) {
       if (viewState.extra) {
         if (viewState.extra.camera) {
           client.remoteCamera = client.synchCtx.getInstance(
-            viewState.extra.camera
+            viewState.extra.camera,
           );
           if (client.remoteCamera) {
             client.style.setCenterOfRotation(client.remoteCamera.getFocalPoint());
@@ -278,24 +273,24 @@ function onConnectionReady(client: Client, conn: any) {
         }
       }
 
-      console.log(`renderstart`);
+      console.log('renderstart');
       client.renderWindow.render();
-      console.log(`renderend`);
+      console.log('renderend');
       // console.timeEnd('updateViewState');
       // client.renderWindow.getInteractor().setEnableRender(true);
     }
   };
 
   const fn = async () => {
-    console.log(`start registerview`);
+    console.log('start registerview');
     const viewId = await client.protocol.registerView(
       DEFAULT_VIEW_ID,
-      viewCallback);
+      viewCallback,
+    );
     console.log(`got viewid: ${viewId}`);
   };
   fn();
 }
-
 
 function getArray(client: Client, hash: string, binary: boolean): Promise<ArrayBuffer> {
   console.log(`getarray ${hash} ${binary}`);

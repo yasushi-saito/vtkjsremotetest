@@ -65,7 +65,7 @@ export const vtkSynchronizableRenderWindow: {
   newInstance: typeof newInstance;
   getSynchronizerContext: typeof getSynchronizerContext;
   extraRenderer: typeof extraRenderer;
-}
+};
 
 export default vtkSynchronizableRenderWindow;
 }

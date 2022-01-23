@@ -118,9 +118,9 @@ const orientationWidget = vtkOrientationMarkerWidget.newInstance({
   interactor: renderWindow.getInteractor(),
 });
 orientationWidget.setEnabled(true);
-//orientationWidget.setViewportCorner(
+// orientationWidget.setViewportCorner(
 //  vtkOrientationMarkerWidget.Corners.BOTTOM_RIGHT
-//);
+// );
 orientationWidget.setViewportSize(0.15);
 orientationWidget.setMinPixelSize(100);
 orientationWidget.setMaxPixelSize(300);
