@@ -36,37 +36,33 @@ const Example: FC<{}> = () => {
   const sc = useRef<SmartConnect>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const [grm, setGrm] = useState<GeometryRenderManager | null>(null);
-
   const [showWidget, setShowWidget] = useState<boolean>(false);
-
-  const onReady = (conn: WebsocketConnection) => {
-    console.log('CONNECTED!');
-    const grm = new GeometryRenderManager({
-      elem: canvas.current,
-      session: conn.getSession(),
-    });
-    grm.start(() => {
-      grm.getLocalRenderer().addActor(newCone());
-      // newImplicitPlaneWidget(grm.getRemoteRenderer());
-      setGrm(grm);
-    });
-  };
 
   useEffect(() => {
     if (sc.current || !canvas.current) {
       throw Error(`useref: ${sc.current} ${canvas.current}`);
     }
 
+    const newgrm = new GeometryRenderManager({
+      elem: canvas.current,
+    });
+    newgrm.getLocalRenderer().addActor(newCone());
+
     const config = { sessionURL: 'ws://localhost:1234/ws' };
     sc.current = SmartConnect.newInstance({ config });
     sc.current.connect();
-    sc.current.onConnectionReady(onReady);
+    sc.current.onConnectionReady((conn: WebsocketConnection) => {
+      newgrm.start(conn.getSession(), () => {
+        setGrm(newgrm);
+      });
+    });
     sc.current.onConnectionError(console.error);
     sc.current.onConnectionClose(console.error);
+
     return () => {
       // TODO(saito) grm.stop must be called when the pv server fails before
       // onRendererReady.
-      if (grm) grm.stop();
+      newgrm.stop();
     };
   }, []);
 
@@ -82,13 +78,39 @@ const Example: FC<{}> = () => {
       grm.removeWidgets();
     }
     grm.render();
-  }, [grm, showWidget])
+  }, [grm, showWidget]);
+
+  const resetCamera = () => {
+    if (!grm) return;
+    grm.getRemoteRenderer().resetCamera();
+    grm.render();
+  }
+  const runRpc = (method: string, args: any[]) => {
+    if (!grm) return;
+    grm.getSession().call(method, args).then((result: any) => {
+      console.log(`${method}: ${result}`);
+    }).catch((err: Error) => {
+      console.log(`${method} error: ${JSON.stringify(err)}`);
+    });
+  };
 
   // style="height:50vh; width: 50vw"
   return (
     <>
       <Button onClick={() => setShowWidget(!showWidget)}>
-        { showWidget ? "Hide widget" : "Show widget"}
+        { showWidget ? 'Hide widget' : 'Show widget'}
+      </Button>
+      <Button onClick={() => runRpc('test.readmesh', ['foo.stl'])}>
+        Load mesh
+      </Button>
+      <Button onClick={() => runRpc('test.setrepresentation', ['Surface With Edges'])}>
+        Surface with edges
+      </Button>
+      <Button onClick={() => runRpc('test.setrepresentation', ['Surface'])}>
+        Surface
+      </Button>
+      <Button onClick={resetCamera}>
+        Reset camera
       </Button>
       <div>
         {grm ? 'connected' : 'Not connected!'}

@@ -30,7 +30,7 @@ const DEFAULT_VIEW_ID: ViewId = '-1';
 // Wrapper around WebsocketSession to provide typesafe RPC methods.
 interface Protocol {
   // Returns the session object passed to the constructor.
-  connection(): WebsocketSession;
+  session(): WebsocketSession;
   registerView(viewId: string, callback: (viewState: ViewState[]) => Promise<void>): Promise<ViewId>;
   unregisterView(viewId: string): Promise<void>;
   subscribe(callback: (viewState: ViewState[]) => Promise<void>): Promise<void>;
@@ -40,7 +40,7 @@ interface Protocol {
 function newProtocol(session: WebsocketSession) : Protocol {
   if (!session) throw Error('empty session');
   return {
-    connection: () => session,
+    session: () => session,
     subscribe: async (callback: (viewState: ViewState[]) => Promise<any>): Promise<void> => {
       session.subscribe('viewport.geometry.view.subscription', callback);
     },
@@ -137,7 +137,6 @@ function newManipulator(setting: InteractorSetting[]): vtkInteractorStyleManipul
 
 interface Props {
   elem: HTMLElement;
-  session: WebsocketSession;
   // Defaults to DEFAULT_INTERACTOR_SETTINGS
   interactorSettings?: InteractorSetting[];
 }
@@ -145,18 +144,16 @@ interface Props {
 export default class GeometryRenderManager {
   private readonly synchCtx: SynchContext;
   private readonly renderWindow: vtkSynchronizableRenderWindowInstance;
-  private readonly protocol: Protocol;
   private readonly style: vtkInteractorStyleManipulator;
   private readonly localRenderer: vtkRenderer;
   private readonly resizeObserver: ResizeObserver;
 
+  private protocol: Protocol | null = null;
   private remoteRenderer: vtkRenderer | null= null;
   private activeCamera: vtkCamera | null = null;
   private remoteCamera: vtkCamera | null = null;
-  private  widgetManager: vtkWidgetManager | null;
-
-  private onReady: (() => void) | null = null;
-
+  private widgetManager: vtkWidgetManager | null;
+  private onViewStateUpdate: () => void | null = null;
 
   constructor(private readonly props: Props) {
     this.synchCtx = vtkSynchronizableRenderWindow.getSynchronizerContext();
@@ -178,7 +175,6 @@ export default class GeometryRenderManager {
     this.localRenderer.setInteractive(false);
     this.renderWindow.addRenderer(this.localRenderer);
 
-    this.protocol = newProtocol(props.session);
     this.synchCtx.setFetchArrayFunction((hash: string, binary: boolean) => this.getArray(hash, binary));
 
     this.resizeObserver = new ResizeObserver(() => {
@@ -195,18 +191,21 @@ export default class GeometryRenderManager {
   }
 
   // Must be called once immediately after construction.
-  public start(onReady: () => void): void {
-    if (this.onReady) throw Error(`double call to start`);
-    this.onReady = onReady;
+  public start(session: WebsocketSession, onReady: () => void) {
+    if (this.protocol) throw Error('double call to start');
+    this.protocol = newProtocol(session);
+    const oldFn = this.onViewStateUpdate;
+    this.onViewStateUpdate = () => {
+      this.onViewStateUpdate = null;
+      onReady();
+      if (oldFn) oldFn();
+    }
     console.log('start registerview');
     this.protocol.registerView(
       DEFAULT_VIEW_ID,
       this.viewCallback.bind(this),
-    ).then((viewId: ViewId) => {
-      console.log(`registerView: viewID=${JSON.stringify(viewId)}`);
-    }).catch((err: Error) => {
-      console.log(`registerView: err=${err}`);
-    });
+    ).then((viewId) => console.log(`registerView: viewid=${viewId}`))
+      .catch((err: Error) => console.log(`registerView: viewid=${JSON.stringify(err)}`));
   }
 
   // Stop the renderer. Must be called once on component unmount.
@@ -214,9 +213,11 @@ export default class GeometryRenderManager {
     this.resizeObserver.unobserve(this.props.elem);
   }
 
+  // Reports the session passed to the constructor.
+  public getSession(): WebsocketSession { return this.protocol.session(); }
   public getLocalRenderer(): vtkRenderer { return this.localRenderer; }
   public getRemoteRenderer(): vtkRenderer { return this.remoteRenderer; }
-  public render() {    this.renderWindow.render();  }
+  public render() { this.renderWindow.render(); }
 
   private async viewCallback(viewStates: ViewState[]): Promise<void> {
     const viewState = viewStates[0];
@@ -245,8 +246,8 @@ export default class GeometryRenderManager {
         this.widgetManager.setRenderer(this.remoteRenderer);
 
         this.renderWindow.render();
-        this.onReady();
       }
+      if (this.onViewStateUpdate) this.onViewStateUpdate();
       const success = await progress;
       console.log(`viewstate success ${success}`);
       if (success) {
@@ -281,12 +282,12 @@ export default class GeometryRenderManager {
   }
 
   public addWidget(widget: any) {
-    if (!this.widgetManager) throw Error(`not ready`);
+    if (!this.widgetManager) throw Error('not ready');
     this.widgetManager.addWidget(widget);
   }
 
   public removeWidgets() {
-    if (!this.widgetManager) throw Error(`not ready`);
+    if (!this.widgetManager) throw Error('not ready');
     this.widgetManager.removeWidgets();
   }
 }
