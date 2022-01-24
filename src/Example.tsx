@@ -11,6 +11,7 @@ import SmartConnect from 'wslink/src/SmartConnect';
 import WebsocketConnection from 'wslink/src/WebsocketConnection';
 
 import GeometryRenderManager from './GeometryRenderManager';
+import newOrientationMarkerWidget from './OrientationMarkerWidget';
 
 function newCone(): vtkActor {
   const coneSource = vtkConeSource.newInstance();
@@ -46,13 +47,14 @@ const Example: FC<{}> = () => {
     const newgrm = new GeometryRenderManager({
       elem: canvas.current,
     });
-    newgrm.getLocalRenderer().addActor(newCone());
 
     const config = { sessionURL: 'ws://localhost:1234/ws' };
     sc.current = SmartConnect.newInstance({ config });
     sc.current.connect();
     sc.current.onConnectionReady((conn: WebsocketConnection) => {
       newgrm.start(conn.getSession(), () => {
+        // newgrm.getLocalRenderer().addActor(newCone());
+        newOrientationMarkerWidget(newgrm.getInteractor());
         setGrm(newgrm);
       });
     });
@@ -117,8 +119,8 @@ const Example: FC<{}> = () => {
         <div
           ref={canvas}
           style={{
-            height: '100vh',
-            width: '100vw',
+            height: '70vh',
+            width: '70vw',
           }}
         />
       </div>

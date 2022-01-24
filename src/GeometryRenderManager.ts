@@ -147,6 +147,7 @@ export default class GeometryRenderManager {
   private readonly style: vtkInteractorStyleManipulator;
   private readonly localRenderer: vtkRenderer;
   private readonly resizeObserver: ResizeObserver;
+  private readonly interactor: vtkRenderWindowInteractor;
 
   private protocol: Protocol | null = null;
   private remoteRenderer: vtkRenderer | null= null;
@@ -163,12 +164,12 @@ export default class GeometryRenderManager {
     openGL.setContainer(props.elem);
     this.renderWindow.addView(openGL);
 
-    const interactor = vtkRenderWindowInteractor.newInstance();
+    this.interactor = vtkRenderWindowInteractor.newInstance();
     this.style = newManipulator(props.interactorSettings || DEFAULT_INTERACTOR_SETTINGS);
-    interactor.setInteractorStyle(this.style);
-    interactor.setView(openGL);
-    interactor.initialize();
-    interactor.bindEvents(props.elem);
+    this.interactor.setInteractorStyle(this.style);
+    this.interactor.setView(openGL);
+    this.interactor.initialize();
+    this.interactor.bindEvents(props.elem);
 
     this.localRenderer = vtkRenderer.newInstance();
     this.localRenderer.setLayer(1);
@@ -215,6 +216,7 @@ export default class GeometryRenderManager {
 
   // Reports the session passed to the constructor.
   public getSession(): WebsocketSession { return this.protocol.session(); }
+  public getInteractor(): vtkRenderWindowInteractor { return this.interactor; }
   public getLocalRenderer(): vtkRenderer { return this.localRenderer; }
   public getRemoteRenderer(): vtkRenderer { return this.remoteRenderer; }
   public render() { this.renderWindow.render(); }
