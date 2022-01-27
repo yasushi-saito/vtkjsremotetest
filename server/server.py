@@ -24,7 +24,9 @@ render_window_serializer.initializeSerializers()
 # The mesh to load. Change it as you wish.
 #STL_PATH = "/home/saito/src0/testdata/pug.stl"
 
-MESH_PATH = "/home/saito/mesh/snapshot/crm_inv/data/p-wq3mkt3nyg4h4sodr5fovaf2xukkke0tfqarskpq8g68i3ykoe/jobid=fvm-64uog6svhfruyjnyvzotluippi9g4p0mrwmy2oudi13u7r2bhf&iter=274@rank=0&name=out.lcsoln"
+ROOT_DIR = "/junk/snapshot"
+#ROOT_DIR = "/home/saito/mesh/snapshot"
+MESH_PATH = f"{ROOT_DIR}/crm_inv/data/p-wq3mkt3nyg4h4sodr5fovaf2xukkke0tfqarskpq8g68i3ykoe/jobid=fvm-64uog6svhfruyjnyvzotluippi9g4p0mrwmy2oudi13u7r2bhf&iter=274@rank=0&name=out.lcsoln"
 
 class _Server(pv_wslink.PVServerProtocol):
     authKey = "wslink-secret"

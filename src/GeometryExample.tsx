@@ -33,7 +33,7 @@ function newImplicitPlaneWidget(renderer: vtkRenderer) : vtkImplicitPlaneWidget 
   return widget;
 }
 
-const Example: FC<{}> = () => {
+const GeometryExample: FC<{}> = () => {
   const sc = useRef<SmartConnect>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const [grm, setGrm] = useState<GeometryRenderManager | null>(null);
@@ -132,4 +132,4 @@ const Example: FC<{}> = () => {
   );
 };
 
-export default Example;
+export default GeometryExample;

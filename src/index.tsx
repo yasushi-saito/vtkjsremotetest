@@ -1,12 +1,14 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import Example from './Example';
+import GeometryExample from './GeometryExample';
+import ImageExample from './ImageExample';
+import RemoteViewExample from './RemoteViewExample';
 
 const rootContainer = document.getElementById('root');
 ReactDOM.unmountComponentAtNode(rootContainer);
 ReactDOM.render(
-  <Example />,
+  <ImageExample />,
   rootContainer,
 );
 
