@@ -178,7 +178,7 @@ export function newClient(elem: HTMLElement): Client {
     const coneSource = vtkConeSource.newInstance();
     const actor = vtkActor.newInstance();
     const mapper = vtkMapper.newInstance();
-    mapper.setInputConnection(coneSource.getOutputPort());
+    (mapper as any).setInputConnection(coneSource.getOutputPort());
     actor.setMapper(mapper);
     actor.getProperty().setRepresentation(2);
     actor.getProperty().setColor(1, 1, 1);

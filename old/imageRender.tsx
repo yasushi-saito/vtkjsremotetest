@@ -35,7 +35,7 @@ smartConnect.onConnectionReady((connection) => {
 
   // Image
   (imageStream as any).connect(session);
-  const viewStream = imageStream.createViewStream(-1);
+  const viewStream = imageStream.createViewStream("-1");
   fullScreenRenderer.getApiSpecificRenderWindow().setViewStream(viewStream);
 
   // Configure image quality
@@ -63,7 +63,7 @@ const actor = vtkActor.newInstance();
 const mapper = vtkMapper.newInstance();
 
 actor.setMapper(mapper);
-mapper.setInputConnection(coneSource.getOutputPort());
+(mapper as any).setInputConnection(coneSource.getOutputPort());
 
 actor.getProperty().setRepresentation(1);
 actor.getProperty().setColor(0, 0, 0);

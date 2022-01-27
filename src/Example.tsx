@@ -17,7 +17,7 @@ function newCone(): vtkActor {
   const coneSource = vtkConeSource.newInstance();
   const actor = vtkActor.newInstance();
   const mapper = vtkMapper.newInstance();
-  mapper.setInputConnection(coneSource.getOutputPort());
+  (mapper as any).setInputConnection(coneSource.getOutputPort());
   actor.setMapper(mapper);
   actor.getProperty().setRepresentation(2);
   actor.getProperty().setColor(1, 1, 1);
@@ -47,14 +47,18 @@ const Example: FC<{}> = () => {
     const newgrm = new GeometryRenderManager({
       elem: canvas.current,
     });
+    let localLayerFilled = false;
 
     const config = { sessionURL: 'ws://localhost:1234/ws' };
     sc.current = SmartConnect.newInstance({ config });
     sc.current.connect();
     sc.current.onConnectionReady((conn: WebsocketConnection) => {
       newgrm.start(conn.getSession(), () => {
-        // newgrm.getLocalRenderer().addActor(newCone());
-        newOrientationMarkerWidget(newgrm.getInteractor());
+        if (!localLayerFilled) {
+          // newgrm.getLocalRenderer().addActor(newCone());
+          localLayerFilled = true;
+          newOrientationMarkerWidget(newgrm.getInteractor());
+        }
         setGrm(newgrm);
       });
     });
