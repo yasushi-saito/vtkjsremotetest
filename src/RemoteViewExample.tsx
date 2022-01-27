@@ -66,6 +66,8 @@ const RemoteViewExample: FC<{}> = () => {
       <div
         ref={canvas}
         style={{
+          zIndex: "0",
+          position: "relative",
           height: '70vh',
           width: '70vw',
         }}

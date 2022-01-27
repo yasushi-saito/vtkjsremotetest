@@ -7,7 +7,7 @@ import sys
 
 # import paraview modules.
 from paraview.web import pv_wslink
-from paraview.web import protocols as pv_protocols
+import protocols as pv_protocols
 
 # import RPC annotation
 from wslink import register as exportRpc

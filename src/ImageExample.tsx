@@ -1,7 +1,12 @@
 // import React, {FC, useEffect, useRef, useState} from 'react';
 import React, { FC, useEffect, useRef, useState } from 'react';
+
+// Load the rendering pieces we want to use (for both WebGL and WebGPU)
+import '@kitware/vtk.js/Rendering/Profiles/Geometry';
+
 import Button from '@material-ui/core/Button';
 
+import vtkInteractorStyleRemoteMouse from '@kitware/vtk.js/Interaction/Style/InteractorStyleRemoteMouse';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
 import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
@@ -15,6 +20,16 @@ import WebsocketConnection, {WebsocketSession} from 'wslink/src/WebsocketConnect
 import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
 
 import vtkImageStream from '@kitware/vtk.js/IO/Core/ImageStream';
+
+interface CameraState {
+  center: [number,number,number];
+  focal: [number,number,number];
+  up: [number,number,number];
+  position: [number,number,number];
+  angle: number;
+  parallelProjection?: boolean;
+  scale?: number;
+}
 
 const ImageExample: FC<{}> = () => {
   const sc = useRef<SmartConnect>(null);
@@ -44,28 +59,76 @@ const ImageExample: FC<{}> = () => {
       renderWindow.addView(openGL);
       openGL.setViewStream(viewStream);
 
+      const setCamera = (state: CameraState) => {
+        console.log(`CAMERA: ${JSON.stringify(state)}`);
+        const camera = renderer.getActiveCamera();
+        camera.setFocalPoint(state.focal[0], state.focal[1], state.focal[2]);
+        camera.setParallelProjection(state.parallelProjection);
+        camera.setParallelScale(state.scale);
+        camera.setPosition(state.position[0], state.position[1], state.position[2]);
+        camera.setViewUp(state.up[0], state.up[1], state.up[2]);
+        camera.setViewAngle(state.angle);
+        renderWindow.render()
+      };
+
       const interactor = vtkRenderWindowInteractor.newInstance();
-      interactor.setInteractorStyle(
-        vtkInteractorStyleTrackballCamera.newInstance()
-      );
+      if (false) {
+        interactor.setInteractorStyle(
+          vtkInteractorStyleTrackballCamera.newInstance()
+        );
+      } else {
+        const style = vtkInteractorStyleRemoteMouse.newInstance();
+        interactor.setInteractorStyle(style);
+        style.setRemoteEventAddOn({ view: "-1" });
+        style.onRemoteMouseEvent((e: any) => {
+          session.current.call('viewport.mouse.interaction', [e]).then(setCamera);
+        });
+        style.onRemoteWheelEvent((e: any) => {
+          session.current.call('viewport.mouse.zoom.wheel', [e]).then(setCamera);
+        });
+
+      }
       interactor.setView(openGL);
       interactor.initialize();
       interactor.bindEvents(canvas.current);
 
-      const localRenderer = vtkRenderer.newInstance();
-      localRenderer.setLayer(0);
-      localRenderer.setInteractive(true);
-      renderWindow.addRenderer(localRenderer);
-
       viewStream.setInteractiveRatio(0.7); // the scaled image compared to the clients view resolution
       viewStream.setInteractiveQuality(50); // jpeg quality
-      viewStream.setCamera(localRenderer.getActiveCamera());
+      viewStream.setCamera(renderer.getActiveCamera());
       viewStream.pushCamera();
-      renderWindow.getInteractor().onStartAnimation(viewStream.startInteraction);
-      renderWindow.getInteractor().onEndAnimation(viewStream.endInteraction);
+      //renderWindow.getInteractor().onStartAnimation(viewStream.startInteraction);
+      //renderWindow.getInteractor().onEndAnimation(viewStream.endInteraction);
+
+      if (true) {
+        const coneSource = vtkConeSource.newInstance();
+        coneSource.setRadius(1);
+        coneSource.setHeight(1);
+        const actor = vtkActor.newInstance();
+        const mapper = vtkMapper.newInstance();
+
+        actor.setMapper(mapper);
+        (mapper as any).setInputConnection(coneSource.getOutputPort());
+
+        actor.getProperty().setRepresentation(2);
+        actor.getProperty().setColor(0.5, 0.5, 0.5);
+        actor.getProperty().setInterpolationToFlat();
+
+        renderer.addActor(actor);
+      }
+
+      const onResize = () => {
+        const rect = canvas.current.getBoundingClientRect();
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        console.log(`SIZE: ${rect.width*devicePixelRatio}, ${rect.height*devicePixelRatio}`);
+        openGL.setSize(rect.width*devicePixelRatio, rect.height*devicePixelRatio);
+        renderWindow.render();
+      };
+
+      const resizeObserver = new ResizeObserver(() => {
+        onResize();
+      });
+      resizeObserver.observe(canvas.current);
     });
-    sc.current.onConnectionError(console.error);
-    sc.current.onConnectionClose(console.error);
   }, []);
 
   const runRpc = (method: string, args: any[]) => {
@@ -92,6 +155,7 @@ const ImageExample: FC<{}> = () => {
         ref={canvas}
         style={{
           zIndex: "0",
+          position: "relative",
           height: '70vh',
           width: '70vw',
         }}

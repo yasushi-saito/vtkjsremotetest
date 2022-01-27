@@ -1,13 +1,16 @@
-A fully-fleshed out version of
+Examples of paraview server / vtk-js integration.
 
-https://github.com/Kitware/vtk-js/tree/master/Sources/IO/Core/ImageStream/example
+This package contains minimal examples that demonstrates rendering contents of
+remote paraview server in a browser.
+
+- `GeometryExample` uses WebGL to render contents
+
+- `ImageExample` performs image rendering. The server sends
+  a series of jpeg images for the scene.
 
 To run:
 
 ```
 yarn install
-yarn build
-pvbatch ./pvw-server.py --port=1234
+yarn run start && pvbatch ./server/server.py --port=1234
 ```
-
-Then load `./dist/index.html` in a browser.
