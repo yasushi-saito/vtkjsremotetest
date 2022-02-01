@@ -8,7 +8,7 @@ import RemoteViewExample from './RemoteViewExample';
 const rootContainer = document.getElementById('root');
 ReactDOM.unmountComponentAtNode(rootContainer);
 ReactDOM.render(
-  <ImageExample />,
+  <GeometryExample />,
   rootContainer,
 );
 

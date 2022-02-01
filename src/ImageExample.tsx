@@ -48,7 +48,7 @@ const ImageExample: FC<{}> = () => {
       session.current = conn.getSession();
       const imageStream = vtkImageStream.newInstance();
       (imageStream as any).connect(conn.getSession());
-      const viewStream = imageStream.createViewStream(-1);
+      const viewStream = imageStream.createViewStream("-1");
 
       const renderWindow = vtkRenderWindow.newInstance();
       const renderer = vtkRenderer.newInstance();
