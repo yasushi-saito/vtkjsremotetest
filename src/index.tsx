@@ -6,7 +6,7 @@ import ImageExample from './ImageExample';
 import RemoteViewExample from './RemoteViewExample';
 
 const rootContainer = document.getElementById('root');
-ReactDOM.unmountComponentAtNode(rootContainer);
+ReactDOM.unmountComponentAtNode(rootContainer as Element);
 ReactDOM.render(
   <GeometryExample />,
   rootContainer,

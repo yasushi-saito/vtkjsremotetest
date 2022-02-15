@@ -13,7 +13,7 @@ import WebsocketConnection, {WebsocketSession} from 'wslink/src/WebsocketConnect
 import vtkRemoteView, {connectImageStream} from '@kitware/vtk.js/Rendering/Misc/RemoteView';
 
 const RemoteViewExample: FC<{}> = () => {
-  const sc = useRef<SmartConnect>(null);
+  const sc = useRef<SmartConnect | null>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const session = useRef<WebsocketSession|null>(null);
 

@@ -32,7 +32,7 @@ interface CameraState {
 }
 
 const ImageExample: FC<{}> = () => {
-  const sc = useRef<SmartConnect>(null);
+  const sc = useRef<SmartConnect | null>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const session = useRef<WebsocketSession|null>(null);
 
@@ -55,7 +55,7 @@ const ImageExample: FC<{}> = () => {
       renderWindow.addRenderer(renderer);
 
       const openGL = vtkOpenGLRenderWindow.newInstance();
-      openGL.setContainer(canvas.current);
+      openGL.setContainer(canvas.current!);
       renderWindow.addView(openGL);
       openGL.setViewStream(viewStream);
 
@@ -63,8 +63,8 @@ const ImageExample: FC<{}> = () => {
         console.log(`CAMERA: ${JSON.stringify(state)}`);
         const camera = renderer.getActiveCamera();
         camera.setFocalPoint(state.focal[0], state.focal[1], state.focal[2]);
-        camera.setParallelProjection(state.parallelProjection);
-        camera.setParallelScale(state.scale);
+        camera.setParallelProjection(state.parallelProjection!);
+        camera.setParallelScale(state.scale!);
         camera.setPosition(state.position[0], state.position[1], state.position[2]);
         camera.setViewUp(state.up[0], state.up[1], state.up[2]);
         camera.setViewAngle(state.angle);
@@ -81,10 +81,10 @@ const ImageExample: FC<{}> = () => {
         interactor.setInteractorStyle(style);
         style.setRemoteEventAddOn({ view: "-1" });
         style.onRemoteMouseEvent((e: any) => {
-          session.current.call('viewport.mouse.interaction', [e]).then(setCamera);
+          session.current!.call('viewport.mouse.interaction', [e]).then(setCamera);
         });
         style.onRemoteWheelEvent((e: any) => {
-          session.current.call('viewport.mouse.zoom.wheel', [e]).then(setCamera);
+          session.current!.call('viewport.mouse.zoom.wheel', [e]).then(setCamera);
         });
 
       }
@@ -117,7 +117,7 @@ const ImageExample: FC<{}> = () => {
       }
 
       const onResize = () => {
-        const rect = canvas.current.getBoundingClientRect();
+        const rect = canvas.current!.getBoundingClientRect();
         const devicePixelRatio = window.devicePixelRatio || 1;
         console.log(`SIZE: ${rect.width*devicePixelRatio}, ${rect.height*devicePixelRatio}`);
         openGL.setSize(rect.width*devicePixelRatio, rect.height*devicePixelRatio);
@@ -127,7 +127,7 @@ const ImageExample: FC<{}> = () => {
       const resizeObserver = new ResizeObserver(() => {
         onResize();
       });
-      resizeObserver.observe(canvas.current);
+      resizeObserver.observe(canvas.current!);
     });
   }, []);
 

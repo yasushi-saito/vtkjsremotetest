@@ -3,21 +3,24 @@ import React, { FC, useEffect, useRef, useState } from 'react';
 import Button from '@material-ui/core/Button';
 
 import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
-import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkConeSource from '@kitware/vtk.js/Filters/Sources/ConeSource';
+import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
+import vtkAbstractWidget from '@kitware/vtk.js/Widgets/Core/AbstractWidget';
 import vtkImplicitPlaneWidget from '@kitware/vtk.js/Widgets/Widgets3D/ImplicitPlaneWidget';
+import vtkLineWidget from '@kitware/vtk.js/Widgets/Widgets3D/LineWidget';
+import vtkDistanceWidget from '@kitware/vtk.js/Widgets/Widgets3D/DistanceWidget';
 import SmartConnect from 'wslink/src/SmartConnect';
 import WebsocketConnection from 'wslink/src/WebsocketConnection';
 
 import GeometryRenderManager from './GeometryRenderManager';
-import newOrientationMarkerWidget from './OrientationMarkerWidget';
+import orientationMarkerWidget from './orientationWidget';
 
 function newCone(): vtkActor {
   const coneSource = vtkConeSource.newInstance();
   const actor = vtkActor.newInstance();
   const mapper = vtkMapper.newInstance();
-  (mapper as any).setInputConnection(coneSource.getOutputPort());
+  mapper.setInputConnection(coneSource.getOutputPort());
   actor.setMapper(mapper);
   actor.getProperty().setRepresentation(2);
   actor.getProperty().setColor(1, 1, 1);
@@ -25,19 +28,57 @@ function newCone(): vtkActor {
   return actor;
 }
 
-function newImplicitPlaneWidget(renderer: vtkRenderer) : vtkImplicitPlaneWidget {
+function newPlaneWidget() : vtkImplicitPlaneWidget {
   const widget = vtkImplicitPlaneWidget.newInstance();
-  widget.getWidgetState().setNormal(0, 0, 1);
+  widget.getWidgetState().setNormal([0, 0, 1]);
   widget.placeWidget([0, 1, 0, 2, 0, 3]);
   widget.setPlaceFactor(3);
   return widget;
 }
 
+function newDistanceWidget() : vtkDistanceWidget {
+  const widget = vtkDistanceWidget.newInstance();
+  widget.placeWidget([0, 2, 0, 2, 0, 3]);
+  const state = widget.getWidgetState();
+  const m = (state as any).getMoveHandle();
+  m.setShape('sphere');
+  m.setVisible(true);
+  const h0 = (state as any).addHandle();
+  h0.setShape('sphere');
+  const h1 = (state as any).addHandle();
+  h1.setShape('sphere');
+  h1.setScale1(50);
+  h1.setVisible(true);
+  return widget;
+}
+
+function newLineWidget() : vtkLineWidget {
+  const widget = vtkLineWidget.newInstance();
+  widget.placeWidget([0, 2, 0, 2, 0, 2]);
+  widget.setPlaceFactor(3);
+
+  const state = widget.getWidgetState();
+  state.getMoveHandle().setShape('sphere');
+
+  const state1 = state.getHandle1();
+  state1.setShape('sphere');
+  state1.setScale1(0.1);
+  state1.setVisible(true);
+
+  const state2 = state.getHandle2();
+  state2.setShape('sphere');
+  state2.setScale1(0.1);
+  state2.setVisible(true);
+  return widget;
+}
+
 const GeometryExample: FC<{}> = () => {
-  const sc = useRef<SmartConnect>(null);
+  const sc = useRef<SmartConnect | null>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const [grm, setGrm] = useState<GeometryRenderManager | null>(null);
-  const [showWidget, setShowWidget] = useState<boolean>(false);
+
+  type WidgetType = 'None' | 'vtkLineWidget' | 'vtkPlaneWidget' | 'vtkDistanceWidget';
+  const [showWidget, setShowWidget] = useState<WidgetType>('None');
 
   useEffect(() => {
     if (sc.current || !canvas.current) {
@@ -55,9 +96,9 @@ const GeometryExample: FC<{}> = () => {
     sc.current.onConnectionReady((conn: WebsocketConnection) => {
       newgrm.start(conn.getSession(), () => {
         if (!localLayerFilled) {
-          // newgrm.getLocalRenderer().addActor(newCone());
+          newgrm.getRemoteRenderer().addActor(newCone());
           localLayerFilled = true;
-          newOrientationMarkerWidget(newgrm.getInteractor());
+          orientationMarkerWidget(newgrm.getInteractor());
         }
         setGrm(newgrm);
       });
@@ -72,23 +113,69 @@ const GeometryExample: FC<{}> = () => {
     };
   }, []);
 
-  const widget = useRef<vtkImplicitPlaneWidget | null>(null);
+  // Draw or hide a widget.
+  const hideWidgets = () => {
+    if (widget.current) {
+      widget.current.delete();
+      widget.current = null;
+      grm!.getWidgetManager().removeWidgets();
+    }
+  }
+  const widget = useRef<vtkAbstractWidget<unknown> | null>(null);
+  let handle: any = null;
+
   useEffect(() => {
     if (!grm) return;
-    if (showWidget) {
-      if (!widget.current) {
-        widget.current = newImplicitPlaneWidget(grm.getRemoteRenderer());
+    if (showWidget == 'vtkPlaneWidget') {
+      if (widget.current && widget.current.getClassName() != 'vtkPlaneWidget') {
+        hideWidgets();
       }
-      grm.addWidget(widget.current);
+      if (!widget.current) {
+        widget.current = newPlaneWidget();
+      }
+      grm.getWidgetManager().addWidget(widget.current);
+    } else if (showWidget == 'vtkLineWidget') {
+      if (widget.current && widget.current.getClassName() != 'vtkLineWidget') {
+        hideWidgets();
+      }
+      let lineWidget: vtkLineWidget;
+      if (!widget.current) {
+        lineWidget = newLineWidget();
+        widget.current = lineWidget;
+      } else {
+        lineWidget = widget.current as vtkLineWidget;
+      }
+      handle = (grm.getWidgetManager().addWidget(lineWidget) as any);
+      handle.getInteractor().render();
+      handle.updateHandleVisibility(0);
+      handle.updateHandleVisibility(1);
+      grm.getWidgetManager().enablePicking();
+      grm.getWidgetManager().grabFocus(lineWidget);
+      grm.render();
+
+      handle.onStartInteractionEvent(() => {
+        console.log(`interaction`);
+      });
+
+    } else if (showWidget == 'vtkDistanceWidget') {
+      if (widget.current && widget.current.getClassName() != 'vtkDistanceWidget') {
+        hideWidgets();
+      }
+      if (!widget.current) {
+        widget.current = newDistanceWidget();
+      }
+      grm.getWidgetManager().addWidget(widget.current);
+      grm.getWidgetManager().enablePicking();
+      grm.getWidgetManager().grabFocus(widget.current);
     } else {
-      grm.removeWidgets();
+      hideWidgets();
     }
     grm.render();
   }, [grm, showWidget]);
 
   const resetCamera = () => {
     if (!grm) return;
-    grm.getRemoteRenderer().resetCamera();
+    grm.getLocalRenderer().resetCamera();
     grm.render();
   }
   const runRpc = (method: string, args: any[]) => {
@@ -103,9 +190,12 @@ const GeometryExample: FC<{}> = () => {
   // style="height:50vh; width: 50vw"
   return (
     <>
-      <Button onClick={() => setShowWidget(!showWidget)}>
-        { showWidget ? 'Hide widget' : 'Show widget'}
-      </Button>
+      <Button onClick={() => {
+        setShowWidget('vtkPlaneWidget');
+      }}>Plane widget</Button>
+      <Button onClick={() => setShowWidget('vtkLineWidget')}>Line widget</Button>
+      <Button onClick={() => setShowWidget('vtkDistanceWidget')}>Distance widget</Button>
+      <Button onClick={() => setShowWidget('None')}>Hide widget</Button>
       <Button onClick={() => runRpc('test.readmesh', ['foo.stl'])}>
         Load mesh
       </Button>

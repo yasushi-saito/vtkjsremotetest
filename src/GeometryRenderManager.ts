@@ -1,5 +1,6 @@
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
 import '@kitware/vtk.js/Rendering/Profiles/Geometry';
+import '@kitware/vtk.js/Rendering/Profiles/Glyph';
 
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
 import vtkInteractorStyleManipulator from '@kitware/vtk.js/Interaction/Style/InteractorStyleManipulator';
@@ -60,7 +61,7 @@ function newProtocol(session: WebsocketSession) : Protocol {
 }
 
 export interface InteractorSetting {
-  action: 'Rotate' | 'Pan' | 'Zoom' | 'Select' | 'Roll';
+  action: 'Rotate' | 'Pan' | 'Zoom' | 'Roll' | 'MultiRotate' | 'ZoomToMouse' | 'None';
   button: 1 | 2 | 3 | null;
   shift?: boolean;
   control?: boolean;
@@ -89,10 +90,6 @@ const DEFAULT_INTERACTOR_SETTINGS: InteractorSetting[] = [
     button: 1,
     action: 'Zoom',
     control: true,
-  }, {
-    button: 1,
-    action: 'Select',
-    alt: true,
   }, {
     button: 1,
     action: 'Roll',
@@ -154,7 +151,7 @@ export default class GeometryRenderManager {
   private activeCamera: vtkCamera | null = null;
   private remoteCamera: vtkCamera | null = null;
   private widgetManager: vtkWidgetManager | null;
-  private onViewStateUpdate: () => void | null = null;
+  private onViewStateUpdate: (() => void) | null = null;
 
   constructor(private readonly props: Props) {
     this.synchCtx = vtkSynchronizableRenderWindow.getSynchronizerContext();
@@ -215,11 +212,15 @@ export default class GeometryRenderManager {
   }
 
   // Reports the session passed to the constructor.
-  public getSession(): WebsocketSession { return this.protocol.session(); }
+  public getSession(): WebsocketSession { return this.protocol!.session(); }
   public getInteractor(): vtkRenderWindowInteractor { return this.interactor; }
   public getLocalRenderer(): vtkRenderer { return this.localRenderer; }
-  public getRemoteRenderer(): vtkRenderer { return this.remoteRenderer; }
+  public getRemoteRenderer(): vtkRenderer { return this.remoteRenderer!; }
   public render() { this.renderWindow.render(); }
+  public getWidgetManager(): vtkWidgetManager {
+    if (!this.widgetManager) throw Error('not ready');
+    return this.widgetManager;
+  }
 
   private async viewCallback(viewStates: ViewState[]): Promise<void> {
     const viewState = viewStates[0];
@@ -231,7 +232,9 @@ export default class GeometryRenderManager {
       if (!this.remoteRenderer && renderers.length > 0) {
         // Note: renderer[0] is the localRenderer itself.
         // renderer[1] is the default remote renderer at layer 0.
-        [, this.remoteRenderer] = renderers;
+        let lr;
+        [lr, this.remoteRenderer] = renderers;
+        if (lr != this.localRenderer) throw Error('lr');
         this.activeCamera = this.remoteRenderer.getActiveCamera();
         this.localRenderer.setActiveCamera(this.activeCamera);
         if (
@@ -279,7 +282,7 @@ export default class GeometryRenderManager {
 
   private async getArray(hash: string, binary: boolean): Promise<ArrayBuffer> {
     console.log(`getarray ${hash} ${binary}`);
-    if (!this.protocol) return Promise.resolve(null);
+    if (!this.protocol) return Promise.resolve(new ArrayBuffer(0));
     return this.protocol.getState(hash, binary);
   }
 

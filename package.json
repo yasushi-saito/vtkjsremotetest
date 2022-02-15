@@ -40,15 +40,13 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.16.7",
-    "@kitware/vtk.js": "^22.1.7",
+    "@kitware/vtk.js": "../vtk-js/dist/esm",
     "@material-ui/core": "^4.12.3",
-    "hammerjs": "^2.0.8",
-    "monologue.js": "^0.3.5",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-helmet": "^6.1.0",
     "react-router-dom": "^6.2.1",
     "resize-observer-polyfill": "^1.5.1",
-    "wslink": "^1.3.1"
+    "wslink": "^1.4.1"
   }
 }
