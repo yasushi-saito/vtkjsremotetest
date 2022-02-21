@@ -10,7 +10,6 @@ import vtkAbstractWidget from '@kitware/vtk.js/Widgets/Core/AbstractWidget';
 import vtkImplicitPlaneWidget from '@kitware/vtk.js/Widgets/Widgets3D/ImplicitPlaneWidget';
 import vtkLineWidget from '@kitware/vtk.js/Widgets/Widgets3D/LineWidget';
 import vtkDistanceWidget from '@kitware/vtk.js/Widgets/Widgets3D/DistanceWidget';
-import vtkEllipseWidget from '@kitware/vtk.js/Widgets/Widgets3D/EllipseWidget';
 import SmartConnect from 'wslink/src/SmartConnect';
 import WebsocketConnection from 'wslink/src/WebsocketConnection';
 
@@ -73,19 +72,12 @@ function newLineWidget() : vtkLineWidget {
   return widget;
 }
 
-function newSphereWidget() : vtkEllipseWidget {
-  const widget = vtkEllipseWidget.newInstance();
-  widget.placeWidget([0, 2, 0, 2, 0, 2]);
-  widget.setPlaceFactor(1.5);
-  return widget;
-}
-
 const GeometryExample: FC<{}> = () => {
   const sc = useRef<SmartConnect | null>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const [grm, setGrm] = useState<GeometryRenderManager | null>(null);
 
-  type WidgetType = 'None' | 'vtkLineWidget' | 'vtkPlaneWidget' | 'vtkDistanceWidget' | 'vtkSphereWidget';
+  type WidgetType = 'None' | 'vtkLineWidget' | 'vtkPlaneWidget' | 'vtkDistanceWidget';
   const [showWidget, setShowWidget] = useState<WidgetType>('None');
 
   useEffect(() => {
@@ -169,13 +161,6 @@ const GeometryExample: FC<{}> = () => {
       grm.getWidgetManager().addWidget(widget.current);
       grm.getWidgetManager().enablePicking();
       grm.getWidgetManager().grabFocus(widget.current);
-    } else if (showWidget === 'vtkSphereWidget') {
-      if (!widget.current) {
-        widget.current = newSphereWidget();
-      }
-      grm.getWidgetManager().addWidget(widget.current);
-      grm.getWidgetManager().enablePicking();
-      grm.getWidgetManager().grabFocus(widget.current);
     }
     grm.render();
   }, [grm, showWidget]);
@@ -202,7 +187,6 @@ const GeometryExample: FC<{}> = () => {
       }}>Plane widget</Button>
       <Button onClick={() => setShowWidget('vtkLineWidget')}>Line widget</Button>
       <Button onClick={() => setShowWidget('vtkDistanceWidget')}>Distance widget</Button>
-      <Button onClick={() => setShowWidget('vtkSphereWidget')}>Sphere widget</Button>
       <Button onClick={() => setShowWidget('None')}>Hide widget</Button>
       <Button onClick={() => runRpc('test.readmesh', ['foo.stl'])}>
         Load mesh
