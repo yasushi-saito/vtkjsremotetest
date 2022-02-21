@@ -457,3 +457,7 @@ declare module '@kitware/vtk.js/Widgets/Widgets3D/LineWidget' {
 
   export default vtkLineWidget;
 }
+
+declare module '@kitware/vtk.js/Widgets/Widgets3D/EllipseWidget' {
+  export = any;
+}
