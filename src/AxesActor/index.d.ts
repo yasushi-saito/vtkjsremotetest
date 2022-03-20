@@ -1,6 +1,7 @@
 import vtkActor, { IActorInitialValues } from '@kitware/vtk.js/Rendering/Core/Actor';
 import { IArrowSourceInitialValues } from '@kitware/vtk.js/Filters/Sources/ArrowSource';
 import { RGBColor } from '@kitware/vtk.js/types';
+import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
 
 /**
  *
@@ -14,7 +15,7 @@ export interface IAxesActorInitialValues extends IActorInitialValues {
 }
 
 export interface vtkAxesActor extends vtkActor {
-
+  setCamera(camera: vtkCamera): void;
 	/**
 	 *
 	 */

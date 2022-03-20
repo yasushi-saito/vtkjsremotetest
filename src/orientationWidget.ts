@@ -1,10 +1,14 @@
 import vtkAnnotatedCubeActor from '@kitware/vtk.js/Rendering/Core/AnnotatedCubeActor';
+// import vtkAxesActor from '@kitware/vtk.js/Rendering/Core/AxesActor';
 import vtkAxesActor from './AxesActor';
+
 import vtkOrientationMarkerWidget from '@kitware/vtk.js/Interaction/Widgets/OrientationMarkerWidget';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
+import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
 
 export default function orientationWidget(
   interactor: vtkRenderWindowInteractor,
+  camera: vtkCamera,
 ): vtkOrientationMarkerWidget {
   let axes;
   if (false) {
@@ -44,7 +48,7 @@ export default function orientationWidget(
       faceColor: '#008000',
     });
   } else {
-    axes = vtkAxesActor.newInstance();
+    axes = vtkAxesActor.newInstance({centerAxes: true});
   }
   const widget = vtkOrientationMarkerWidget.newInstance({
     actor: axes,

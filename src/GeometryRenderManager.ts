@@ -5,7 +5,7 @@ import '@kitware/vtk.js/Rendering/Profiles/Glyph';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
 import vtkInteractorStyleManipulator from '@kitware/vtk.js/Interaction/Style/InteractorStyleManipulator';
 
-import vtkSynchronizableRenderWindow, { SynchContext, vtkSynchronizableRenderWindowInstance, ViewState } from '@kitware/vtk.js/Rendering/Misc/SynchronizableRenderWindow';
+import vtkSynchronizableRenderWindow, { ISynchronizerContext, IViewState } from '@kitware/vtk.js/Rendering/Misc/SynchronizableRenderWindow';
 
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
 import vtkWidgetManager from '@kitware/vtk.js/Widgets/Core/WidgetManager';
@@ -32,9 +32,9 @@ const DEFAULT_VIEW_ID: ViewId = '-1';
 interface Protocol {
   // Returns the session object passed to the constructor.
   session(): WebsocketSession;
-  registerView(viewId: string, callback: (viewState: ViewState[]) => Promise<void>): Promise<ViewId>;
+  registerView(viewId: string, callback: (viewState: IViewState[]) => Promise<void>): Promise<ViewId>;
   unregisterView(viewId: string): Promise<void>;
-  subscribe(callback: (viewState: ViewState[]) => Promise<void>): Promise<void>;
+  subscribe(callback: (viewState: IViewState[]) => Promise<void>): Promise<void>;
   getState(hash: string, binary: boolean): Promise<ArrayBuffer>;
 }
 
@@ -42,10 +42,10 @@ function newProtocol(session: WebsocketSession) : Protocol {
   if (!session) throw Error('empty session');
   return {
     session: () => session,
-    subscribe: async (callback: (viewState: ViewState[]) => Promise<any>): Promise<void> => {
+    subscribe: async (callback: (viewState: IViewState[]) => Promise<any>): Promise<void> => {
       session.subscribe('viewport.geometry.view.subscription', callback);
     },
-    registerView: async (viewId: string, callback: (viewState: ViewState[]) => Promise<any>): Promise<ViewId> => {
+    registerView: async (viewId: string, callback: (viewState: IViewState[]) => Promise<any>): Promise<ViewId> => {
       await session.subscribe('viewport.geometry.view.subscription', callback);
       const reply = await session.call('viewport.geometry.view.observer.add', [viewId]);
       console.log(`registerView: got view ${JSON.stringify(viewId)}`);
@@ -139,8 +139,8 @@ interface Props {
 }
 
 export default class GeometryRenderManager {
-  private readonly synchCtx: SynchContext;
-  private readonly renderWindow: vtkSynchronizableRenderWindowInstance;
+  private readonly synchCtx: ISynchronizerContext;
+  private readonly renderWindow: vtkSynchronizableRenderWindow;
   private readonly style: vtkInteractorStyleManipulator;
   private readonly localRenderer: vtkRenderer;
   private readonly resizeObserver: ResizeObserver;
@@ -150,7 +150,7 @@ export default class GeometryRenderManager {
   private remoteRenderer: vtkRenderer | null= null;
   private activeCamera: vtkCamera | null = null;
   private remoteCamera: vtkCamera | null = null;
-  private widgetManager: vtkWidgetManager | null;
+  private widgetManager: vtkWidgetManager | null = null;
   private onViewStateUpdate: (() => void) | null = null;
 
   constructor(private readonly props: Props) {
@@ -159,7 +159,7 @@ export default class GeometryRenderManager {
 
     const openGL = vtkOpenGLRenderWindow.newInstance();
     openGL.setContainer(props.elem);
-    this.renderWindow.addView(openGL);
+    (this.renderWindow as any).addView(openGL);
 
     this.interactor = vtkRenderWindowInteractor.newInstance();
     this.style = newManipulator(props.interactorSettings || DEFAULT_INTERACTOR_SETTINGS);
@@ -171,7 +171,7 @@ export default class GeometryRenderManager {
     this.localRenderer = vtkRenderer.newInstance();
     this.localRenderer.setLayer(1);
     this.localRenderer.setInteractive(false);
-    this.renderWindow.addRenderer(this.localRenderer);
+    (this.renderWindow as any).addRenderer(this.localRenderer);
 
     this.synchCtx.setFetchArrayFunction((hash: string, binary: boolean) => this.getArray(hash, binary));
 
@@ -183,7 +183,7 @@ export default class GeometryRenderManager {
         Math.floor(dims.width * devicePixelRatio),
         Math.floor(dims.height * devicePixelRatio),
       );
-      this.renderWindow.render();
+      this.render();
     });
     this.resizeObserver.observe(props.elem);
   }
@@ -216,26 +216,27 @@ export default class GeometryRenderManager {
   public getInteractor(): vtkRenderWindowInteractor { return this.interactor; }
   public getLocalRenderer(): vtkRenderer { return this.localRenderer; }
   public getRemoteRenderer(): vtkRenderer { return this.remoteRenderer!; }
-  public render() { this.renderWindow.render(); }
+  public render() { (this.renderWindow as any).render(); }
+  public getCamera(): vtkCamera { return this.activeCamera!; }
   public getWidgetManager(): vtkWidgetManager {
     if (!this.widgetManager) throw Error('not ready');
     return this.widgetManager;
   }
 
-  private async viewCallback(viewStates: ViewState[]): Promise<void> {
+  private async viewCallback(viewStates: IViewState[]): Promise<void> {
     const viewState = viewStates[0];
     console.log('viewstate', viewState, JSON.stringify(viewState));
     const progress = this.renderWindow.synchronize(viewState);
     console.log(`viewstate progress ${progress}`);
     if (progress) {
-      const renderers = this.renderWindow.getRenderersByReference();
+      const renderers = (this.renderWindow as any).getRenderersByReference();
       if (!this.remoteRenderer && renderers.length > 0) {
         // Note: renderer[0] is the localRenderer itself.
         // renderer[1] is the default remote renderer at layer 0.
         let lr;
         [lr, this.remoteRenderer] = renderers;
         if (lr != this.localRenderer) throw Error('lr');
-        this.activeCamera = this.remoteRenderer.getActiveCamera();
+        this.activeCamera = this.remoteRenderer!.getActiveCamera();
         this.localRenderer.setActiveCamera(this.activeCamera);
         if (
           viewState.extra &&
@@ -248,9 +249,9 @@ export default class GeometryRenderManager {
           );
         }
         this.widgetManager = vtkWidgetManager.newInstance();
-        this.widgetManager.setRenderer(this.remoteRenderer);
+        this.widgetManager.setRenderer(this.remoteRenderer!);
 
-        this.renderWindow.render();
+        this.render();
       }
       if (this.onViewStateUpdate) this.onViewStateUpdate();
       const success = await progress;
@@ -271,9 +272,7 @@ export default class GeometryRenderManager {
           }
         }
 
-        console.log('renderstart');
-        this.renderWindow.render();
-        console.log('renderend');
+        this.render();
         // console.timeEnd('updateViewState');
         // client.renderWindow.getInteractor().setEnableRender(true);
       }

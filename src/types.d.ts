@@ -1,3 +1,46 @@
+// Copyright 2020-2022 Luminary Cloud, Inc. All Rights Reserved.
+
+// Declare constants received from webpack.
+declare const __DEV__: boolean; // eslint-disable-line no-underscore-dangle
+
+// TODO: this should be generated from the css file using some tool
+declare module '*.css' {
+  let xmodule: { [key: string]: string };
+  export = xmodule;
+}
+
+declare module 'tiny-queue' {
+  class Queue {
+    push(data: any): void;
+    shift(): any;
+    readonly length: number;
+  }
+  export = Queue;
+}
+
+declare module '*.svg' {
+  const content: any;
+  export default content;
+}
+
+declare module '*.json' {
+  const content: any;
+  export default content;
+}
+
+declare module 'react-helmet';
+
+// Remove once the following issue is resolved.
+//
+// https://github.com/Microsoft/TypeScript/issues/28502
+declare class ResizeObserver {
+  constructor(callback: any);
+  observe: (elem: Element) => void;
+  unobserve: (elem: Element) => void;
+}
+
+declare module 'd3';
+
 declare module '@kitware/vtk.js/Rendering/Core/InteractorObesrver' {
   export interface vtkInteractorObserver { // extends vtkObject {
     onStartInteractionEvent(fn: (event: { type: 'StartInteractionEvent' })=>void): void;
@@ -178,16 +221,10 @@ declare module '@kitware/vtk.js/Interaction/Manipulators/GestureCameraManipulato
   export = any; // eslint-disable-line no-undef
 }
 
-declare module '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera' {
-  export = any; // eslint-disable-line no-undef
-}
-
-declare module '@kitware/vtk.js/Widgets/Widgets3D/ImplicitPlaneWidget' {
-  export = any; // eslint-disable-line no-undef
-}
-
-declare module '@kitware/vtk.js/Widgets/Core/WidgetManager' {
-  export = any; // eslint-disable-line no-undef
+declare module 'commondir' {
+  function commondir(a: string[]): string;
+  function commondir(a: string, b: string[]): string;
+  export default commondir;
 }
 
 declare module '@kitware/vtk.js/Widgets/Widgets3D/ImplicitPlaneWidget' {
@@ -196,6 +233,8 @@ declare module '@kitware/vtk.js/Widgets/Widgets3D/ImplicitPlaneWidget' {
   } from '@kitware/vtk.js/Widgets/Representations/ImplicitPlaneRepresentation';
   // eslint-disable-next-line import/no-duplicates
   import vtkAbstractWidget from '@kitware/vtk.js/Widgets/Core/AbstractWidget';
+
+  export type vtkImplicitPlaneWidgetState = ImplicitPlaneRepresentationState;
 
   // eslint-disable-next-line max-len
   export interface vtkImplicitPlaneWidget extends vtkAbstractWidget<ImplicitPlaneRepresentationState> {}
@@ -212,19 +251,27 @@ declare module '@kitware/vtk.js/Widgets/Widgets3D/ImplicitPlaneWidget' {
 }
 
 declare module '@kitware/vtk.js/Widgets/Core/WidgetManager' {
+  // eslint-disable-next-line import/no-duplicates
+  import vtkAbstractWidget from '@kitware/vtk.js/Widgets/Core/AbstractWidget';
+  import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
   import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
+
+  export interface vtkWidgetHandle<State> extends vtkAbstractWidget<State> {
+    getInteractor(): vtkRenderWindowInteractor;
+  }
 
   export interface vtkWidgetManager {
     enablePicking(): void;
     disablePicking(): void;
     renderWidgets(): void;
     setRenderer(renderer: vtkRenderer): void;
-    addWidget(widget: vtkAbstractWidget<unknown>,
-              viewType?: number /* one of ViewTypes enum */,
-              initialValues?: any):void;
+    addWidget<State>(widget: vtkAbstractWidget<State>,
+                     viewType?: number /* one of ViewTypes enum */,
+                     initialValues?: any): vtkWidgetHandle<State>;
 
     // Calls widget.delete() as a side effect.
     removeWidget(widget: vtkAbstractWidget<unknown>): void;
+
     // Calls removeWidget on all the registered widgets.
     removeWidgets(): void;
     updateSelectionFromXY(x:number, y:number):void;
@@ -430,7 +477,7 @@ declare module '@kitware/vtk.js/Widgets/Widgets3D/LineWidget' {
     setShape(arg: ShapeType):void;
   }
 
-  export interface State {
+  export interface vtkLineWidgetState {
     getMoveHandle(): HandleState;
     setMoveHandle(arg: HandleState): void;
     getHandle1(): HandleState;
@@ -443,7 +490,7 @@ declare module '@kitware/vtk.js/Widgets/Widgets3D/LineWidget' {
     setPositionOnLine(arg: number): void;
   }
 
-  export interface vtkLineWidget extends vtkAbstractWidget<State> {
+  export interface vtkLineWidget extends vtkAbstractWidget<vtkLineWidgetState> {
     getDistance(): number;
   }
 
@@ -456,8 +503,4 @@ declare module '@kitware/vtk.js/Widgets/Widgets3D/LineWidget' {
   };
 
   export default vtkLineWidget;
-}
-
-declare module '@kitware/vtk.js/Widgets/Widgets3D/EllipseWidget' {
-  export = any;
 }

@@ -8,19 +8,6 @@ import vtkAppendPolyData from '@kitware/vtk.js/Filters/General/AppendPolyData';
 
 // ----------------------------------------------------------------------------
 
-function centerDataSet(ds, offset=[0,0,0]) {
-  const bounds = ds.getPoints().getBounds();
-  const center = [
-    -(bounds[0] + bounds[1]) * 0.5 + offset[0],
-    -(bounds[2] + bounds[3]) * 0.5 + offset[1],
-    -(bounds[4] + bounds[5]) * 0.5 + offset[2],
-  ];
-  vtkMatrixBuilder
-    .buildFromDegree()
-    .translate(...center)
-    .apply(ds.getPoints().getData());
-}
-
 function moveDataSet(ds, offset) {
   const bounds = ds.getPoints().getBounds();
   vtkMatrixBuilder
@@ -71,23 +58,24 @@ function moveAxis(axis, center, axisIndex) {
 function vtkAxesActor(publicAPI, model) {
   // Set our className
   model.classHierarchy.push('vtkAxesActor');
-  publicAPI.update = () => {
+
     const xAxis = vtkArrowSource
-      .newInstance({ direction: [1, 0, 0], ...model.config })
+          .newInstance({ direction: [1, 0, 0], ...model.config })
           .getOutputData();
-      moveAxis(xAxis, model.centerAxes, 0);
+    moveAxis(xAxis, model.centerAxes, 0);
+    console.log(`XAXIS: ${xAxis.getPoints().getData()}`);
     addColor(xAxis, ...model.xAxisColor);
 
     const yAxis = vtkArrowSource
-      .newInstance({ direction: [0, 1, 0], ...model.config })
-      .getOutputData();
-      moveAxis(yAxis, model.centerAxes, 1);
+          .newInstance({ direction: [0, 1, 0], ...model.config })
+          .getOutputData();
+    moveAxis(yAxis, model.centerAxes, 1);
     addColor(yAxis, ...model.yAxisColor);
 
     const zAxis = vtkArrowSource
-      .newInstance({ direction: [0, 0, 1], ...model.config })
-      .getOutputData();
-      moveAxis(zAxis, model.centerAxes, 2);
+          .newInstance({ direction: [0, 0, 1], ...model.config })
+          .getOutputData();
+    moveAxis(zAxis, model.centerAxes, 2);
     addColor(zAxis, ...model.zAxisColor);
 
     const source = vtkAppendPolyData.newInstance();
@@ -99,9 +87,6 @@ function vtkAxesActor(publicAPI, model) {
     const mapper = vtkMapper.newInstance();
     mapper.setInputConnection(source.getOutputPort());
     publicAPI.setMapper(mapper);
-  };
-
-  publicAPI.update();
 }
 
 // ----------------------------------------------------------------------------
@@ -120,7 +105,7 @@ export const DEFAULT_VALUES = {
   xAxisColor: [255, 0, 0],
   yAxisColor: [255, 255, 0],
   zAxisColor: [0, 128, 0],
-  centerAxes: false,
+  centerAxes: true,
 };
 
 // ----------------------------------------------------------------------------
@@ -131,7 +116,7 @@ export function extend(publicAPI, model, initialValues = {}) {
   // Inheritance
   vtkActor.extend(publicAPI, model, initialValues);
 
-  macro.setGet(publicAPI, model, ['config']);
+    macro.setGet(publicAPI, model, ['config', 'camera']);
   macro.setGetArray(
     publicAPI,
     model,
