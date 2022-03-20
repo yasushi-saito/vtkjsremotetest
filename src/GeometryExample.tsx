@@ -1,6 +1,7 @@
 // import React, {FC, useEffect, useRef, useState} from 'react';
 import React, { FC, useEffect, useRef, useState } from 'react';
 import Button from '@material-ui/core/Button';
+import { vec3 } from 'gl-matrix';
 
 import vtkWidgetManager, { vtkWidgetHandle } from '@kitware/vtk.js/Widgets/Core/WidgetManager';
 import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
@@ -153,21 +154,26 @@ class SphereWidget implements BaseWidget {
     // eslint-disable-next-line import/no-named-as-default-member
     this.widget = vtkSphereWidget.newInstance();
     this.widget.placeWidget(bounds);
-    this.widget.setPlaceFactor(1.2);
+    this.widget.setPlaceFactor(10);
 
     this.handle = manager.addWidget(this.widget);
     manager.grabFocus(this.widget);
 
-    this.resetHandles([bounds[0], bounds[2], bounds[4]],
-                      [bounds[1]/3, bounds[3]/3, bounds[5]/3]);
+    const boundMin: Vector3 = [bounds[0], bounds[2], bounds[4]];
+    const boundMax: Vector3 = [bounds[1], bounds[3], bounds[5]];
+    const bbSize = vec3.sub(vec3.create(), boundMax, boundMin);
+    const center = boundMin;
+    const radius = vec3.length(bbSize) * 0.3;
+    console.log(`CENTER: min=${boundMin} max=${boundMax} ${center} ${radius}`);
+    this.resetHandles(center as Vector3, radius);
   }
 
-  private resetHandles(center: Vector3, bound: Vector3): void {
-    const state = this.widget.getWidgetState();
-    state.getCenterHandle().setVisible(true);
-    state.getBoundaryHandle().setVisible(true);
-    state.getSphereHandle().setVisible(true);
-    (this.handle as any).setPoints(center, bound);
+  private resetHandles(center: Vector3, radius: number): void {
+    //const state = this.widget.getWidgetState();
+    //state.getCenterHandle().setVisible(true);
+    //state.getBorderHandle().setVisible(true);
+    //state.getSphereHandle().setVisible(true);
+    (this.handle as any).setCenterAndRadius(center, radius);
   }
 
   public delete() {

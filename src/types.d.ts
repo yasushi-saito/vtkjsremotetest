@@ -3,33 +3,6 @@
 // Declare constants received from webpack.
 declare const __DEV__: boolean; // eslint-disable-line no-underscore-dangle
 
-// TODO: this should be generated from the css file using some tool
-declare module '*.css' {
-  let xmodule: { [key: string]: string };
-  export = xmodule;
-}
-
-declare module 'tiny-queue' {
-  class Queue {
-    push(data: any): void;
-    shift(): any;
-    readonly length: number;
-  }
-  export = Queue;
-}
-
-declare module '*.svg' {
-  const content: any;
-  export default content;
-}
-
-declare module '*.json' {
-  const content: any;
-  export default content;
-}
-
-declare module 'react-helmet';
-
 // Remove once the following issue is resolved.
 //
 // https://github.com/Microsoft/TypeScript/issues/28502
@@ -38,8 +11,6 @@ declare class ResizeObserver {
   observe: (elem: Element) => void;
   unobserve: (elem: Element) => void;
 }
-
-declare module 'd3';
 
 declare module '@kitware/vtk.js/Rendering/Core/InteractorObesrver' {
   export interface vtkInteractorObserver { // extends vtkObject {
@@ -54,6 +25,8 @@ declare module '@kitware/vtk.js/Rendering/Core/InteractorObesrver' {
   };
   export default vtkInteractorObserver;
 }
+
+declare module '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
 
 declare module '@kitware/vtk.js/Rendering/Core/InteractorStyle' {
   import vtkInteractorObserver from '@kitware/vtk.js/Rendering/Core/InteractorObserver';

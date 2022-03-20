@@ -1,5 +1,6 @@
 import { distance2BetweenPoints } from '@kitware/vtk.js/Common/Core/Math';
 import { ViewTypes } from '@kitware/vtk.js/Widgets/Core/WidgetManager/Constants';
+import vtkAbstractWidgetFactory from '@kitware/vtk.js/Widgets/Core/AbstractWidgetFactory';
 import vtkPlanePointManipulator from '@kitware/vtk.js/Widgets/Manipulators/PlaneManipulator';
 import vtkCircleContextRepresentation from '@kitware/vtk.js/Widgets/Representations/CircleContextRepresentation';
 import vtkSphereHandleRepresentation from '@kitware/vtk.js/Widgets/Representations/SphereHandleRepresentation';
@@ -27,14 +28,26 @@ function vtkSphereWidget(publicAPI, model) {
         scaleInPixels: true,
       },
     }, {
+      builder: vtkSphereHandleRepresentation,
+      labels: ['centerHandle'],
+      initialValues: {
+        scaleInPixels: true,
+      },
+    }, {
+      builder: vtkSphereHandleRepresentation,
+      labels: ['borderHandle'],
+      initialValues: {
+        scaleInPixels: true,
+      },
+    }, {
       builder: vtkSphereContextRepresentation,
       labels: ['sphereHandle'],
     },
   ];
 
   publicAPI.getRadius = () => {
-    const h1 = model.widgetState.getPoint1Handle();
-    const h2 = model.widgetState.getPoint2Handle();
+    const h1 = model.widgetState.getCenterHandle();
+    const h2 = model.widgetState.getBorderHandle();
     return Math.sqrt(distance2BetweenPoints(h1.getOrigin(), h2.getOrigin()));
   };
 
@@ -42,35 +55,11 @@ function vtkSphereWidget(publicAPI, model) {
   model.widgetState = stateGenerator();
 }
 
-// ----------------------------------------------------------------------------
-
-function defaultValues(initialValues) {
-  return {
-    modifierBehavior: {
-      None: {
-        [BehaviorCategory.PLACEMENT]:
-          ShapeBehavior[BehaviorCategory.PLACEMENT].CLICK_AND_DRAG,
-        [BehaviorCategory.POINTS]:
-          ShapeBehavior[BehaviorCategory.POINTS].CORNER_TO_CORNER,
-        [BehaviorCategory.RATIO]: ShapeBehavior[BehaviorCategory.RATIO].FREE,
-      },
-      Shift: {
-        [BehaviorCategory.RATIO]: ShapeBehavior[BehaviorCategory.RATIO].FIXED,
-      },
-      Control: {
-        [BehaviorCategory.POINTS]:
-          ShapeBehavior[BehaviorCategory.POINTS].CORNER_TO_CORNER,
-      },
-    },
-    ...initialValues,
-  };
-}
-
 export function extend(publicAPI, model, initialValues = {}) {
-  vtkShapeWidget.extend(publicAPI, model, defaultValues(initialValues));
-  macro.setGet(publicAPI, model, ['manipulator', 'widgetState']);
-
-  vtkSphereWidget(publicAPI, model);
+    Object.assign(model, {}, initialValues);
+    vtkAbstractWidgetFactory.extend(publicAPI, model, initialValues);
+    macro.setGet(publicAPI, model, ['manipulator', 'widgetState']);
+    vtkSphereWidget(publicAPI, model);
 }
 
 export const newInstance = macro.newInstance(extend, 'vtkSphereWidget');

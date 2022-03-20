@@ -3,31 +3,41 @@ import { TextPosition } from '@kitware/vtk.js/Widgets/Widgets3D/ShapeWidget/Cons
 
 // Defines the structure of the widget state.
 // See https://kitware.github.io/vtk-js/docs/concepts_widgets.html.
-export default function generateState() {
+export default function stateGenerator() {
   return (
     vtkStateBuilder
       .createBuilder()
-      // The handlee for the center of the sphre.
+      // The handle used only for during initial placement.
       .addStateFromMixin({
         labels: ['moveHandle'],
+        mixins: ['origin', 'color', 'scale1', 'visible', 'manipulator'],
+        name: 'moveHandle',
+        initialValues: {
+          scale1: 50,
+          visible: true,
+        },
+      })
+      // The handle for the center of the sphere.
+      .addStateFromMixin({
+        labels: ['centerHandle'],
         mixins: ['origin', 'color', 'scale1', 'visible', 'manipulator'],
         name: 'centerHandle',
         initialValues: {
-          scale1: 10,
+          scale1: 20,
           visible: true,
         },
       })
-      // The handlee for a boundary point of the sphre.
+      // The handle for a border point of the sphere.
       .addStateFromMixin({
-        labels: ['moveHandle'],
+        labels: ['borderHandle'],
         mixins: ['origin', 'color', 'scale1', 'visible', 'manipulator'],
-        name: 'boundaryHandle',
+        name: 'borderHandle',
         initialValues: {
-          scale1: 10,
+          scale1: 20,
           visible: true,
         },
       })
-      // Internal state for displaying the sphere.
+      // For displaying the sphere.
       .addStateFromMixin({
         labels: ['sphereHandle'],
         mixins: ['origin', 'color', 'scale1', 'visible', 'orientation'],
@@ -36,32 +46,6 @@ export default function generateState() {
           visible: true,
           radius: 1,
         },
-      })
-      // The following states are not really supported by the spher widget, but
-      // are required to make ShapeWidget work. Changes to these fields are
-      // ignored.
-      .addStateFromMixin({
-        labels: ['SVGtext'],
-        mixins: ['origin', 'color', 'text', 'visible'],
-        name: 'text',
-        initialValues: {
-          /* text is empty to set a text filed in the SVGLayer and to avoid
-           * displaying text before positioning the handles */
-          text: '',
-        },
-      })
-      // FIXME: to move in text handle sub state
-      .addField({
-        name: 'textPosition',
-        initialValue: [
-          TextPosition.CENTER,
-          TextPosition.CENTER,
-          TextPosition.CENTER,
-        ],
-      })
-      .addField({
-        name: 'textWorldMargin',
-        initialValue: 0,
       })
       .build()
   );

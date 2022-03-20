@@ -19,8 +19,8 @@ export interface HandleState {
 export interface vtkSphereWidgetState {
   // A handle that defines the center of the sphere.
   getCenterHandle(): HandleState;
-  // An arbitrary point at the sphere boundary. Used only to set the radius.
-  getBoundaryHandle(): HandleState;
+  // An arbitrary point at the sphere border. Used only to set the radius.
+  getBorderHandle(): HandleState;
 
   // Internal state for drawing the sphere.
   getSphereHandle(): HandleState;
